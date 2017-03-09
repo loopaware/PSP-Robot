@@ -1,0 +1,171 @@
+' -----[ Title ]-----------------------------------------------------------
+' Ir Remote Application via PSP - PspRecieve.bs2
+' Process incoming SIRCS signals and move or beep.
+' {$STAMP BS2}
+' {$PBASIC 2.5}
+' -----[ Revision History ]------------------------------------------------
+' V1.0 - Supports PSP PHAT/1000 and Basic Stamp 2.
+' -----[ I/O Definitions ]-------------------------------------------------
+' SONY TV IR remote declaration - input receives from IR detector
+IrDet               PIN  14 ' I/O pin to IR detector output
+LSERVO              PIN 13
+RSERVO              PIN 12
+PIEZO               PIN  1
+' -----[ Constants ]-------------------------------------------------------
+' Pulse duration constants for SONY remote.
+ThresholdStart      CON 1000 ' Message rest vs. data rest
+ThresholdPulse      CON  500 ' Binary 1 vs. 0 for PULSIN
+ThresholdEdge       CON  300 ' Binary 1 vs. 0 for RCTIME
+' -----[ Variables ]-------------------------------------------------------
+' SONY TV IR remote variables
+irPulse             VAR Word ' Stores pulse widths
+remoteCode          VAR Byte ' Stores remote code
+iTone               VAR Word
+LPulse              VAR Word
+RPulse              VAR Word
+' -----[ Initialization ]--------------------------------------------------
+DEBUG "Press/release remote buttons..."
+' -----[ Main Routine ]----------------------------------------------------
+' Replace this button testing DO...LOOP with your own code.
+DO ' Main DO...LOOP
+
+GOSUB Get_PSP_Code
+SELECT remoteCode
+
+CASE 1 'Cross -> Forward
+LPulse = 850
+RPulse = 650
+DEBUG "FramåT"
+
+CASE 2 'Left -> Rotate Left
+LPulse = 650
+RPulse = 650
+DEBUG "VänsterÅt"
+
+CASE 3 'Right -> Rotate Right
+LPulse = 850
+RPulse = 850
+
+CASE 4 'Square/Triangle -> Backward
+LPulse = 650
+RPulse = 850
+
+CASE 5 'Circle + Cross + Left -> Pivot Fwd-left
+LPulse = 750
+RPulse = 650
+
+CASE 6 'Circle + Cross + Right -> Pivot Fwd-right
+LPulse = 850
+RPulse = 750
+
+CASE 7 'Circle + Square/Triangle + Right -> Pivot back-left
+LPulse = 750
+RPulse = 850
+
+CASE 8 'Circle + Square/Triangle + Right -> Pivot back-right
+LPulse = 650
+RPulse = 750
+
+CASE 9 'Cross + Right -> Forwards & Right
+LPulse = 850
+RPulse = 720
+
+CASE 10 'Cross + Left -> Forwards & Left
+LPulse = 780
+RPulse = 650
+
+CASE 11 'Square/Triangle + Right -> Backwards & Right
+LPulse = 720
+RPulse = 850
+
+CASE 12 'Square/Triangle + Left -> Backwards & Left
+LPulse = 650
+RPulse = 780
+
+CASE 13 'Circle Hold position
+LPulse = 750
+RPulse = 750
+
+ENDSELECT
+
+'Alla ljud
+SELECT remoteCode
+'låga toner
+CASE 20
+FREQOUT PIEZO, 40, 300
+
+CASE 21
+FREQOUT PIEZO, 50, 500
+
+CASE 22
+FREQOUT PIEZO, 60, 700
+
+CASE 23
+FREQOUT PIEZO, 70, 900
+
+'Höga toner
+CASE 24
+FREQOUT PIEZO, 50, 1300
+
+CASE 25
+FREQOUT PIEZO, 60, 1600
+
+CASE 26
+FREQOUT PIEZO, 70, 2000
+
+CASE 27
+FREQOUT PIEZO, 80, 2400
+
+'Melodier
+CASE 28
+FOR iTone = 1000 TO 3000 STEP 100
+  FREQOUT PIEZO, 15, iTone
+NEXT
+
+FREQOUT PIEZO, 15, 2800
+FREQOUT PIEZO, 15, 2600
+FREQOUT PIEZO, 15, 2400
+
+FOR iTone = 2200 TO 3000 STEP 100
+  FREQOUT PIEZO, 15, iTone
+NEXT
+FOR iTone = 2900 TO 1000 STEP 100
+  FREQOUT PIEZO, 15, iTone
+NEXT
+
+CASE 29
+FREQOUT PIEZO, 65, 2800
+
+ENDSELECT
+
+'Make the servos move
+IF remoteCode < 14 THEN
+  PULSOUT LSERVO, LPulse
+  PULSOUT RSERVO, RPulse
+ENDIF
+
+LOOP ' Repeat main DO...LOOP
+
+' -----[ Sub - Get_Ir_Code ]---------------------------------
+' SONY TV IR remote subroutine loads the remote code into the
+' remoteCode variable.
+Get_PSP_Code:
+remoteCode = 0
+DO ' Wait for end of resting state.
+  RCTIME IrDet, 1, irPulse
+LOOP UNTIL irPulse > ThresholdStart
+  PULSIN IrDet, 0, irPulse ' Get data pulses.
+  IF irPulse > ThresholdPulse THEN remoteCode.BIT0 = 1
+  RCTIME IrDet, 0, irPulse
+  IF irPulse > ThresholdEdge THEN remoteCode.BIT1 = 1
+  RCTIME IrDet, 0, irPulse
+  IF irPulse > ThresholdEdge THEN remoteCode.BIT2 = 1
+  RCTIME IrDet, 0, irPulse
+  IF irPulse > ThresholdEdge THEN remoteCode.BIT3 = 1
+  RCTIME IrDet, 0, irPulse
+  IF irPulse > ThresholdEdge THEN remoteCode.BIT4 = 1
+  RCTIME IrDet, 0, irPulse
+  IF irPulse > ThresholdEdge THEN remoteCode.BIT5 = 1
+  RCTIME IrDet, 0, irPulse
+  IF irPulse > ThresholdEdge THEN remoteCode.BIT6 = 1
+RETURN

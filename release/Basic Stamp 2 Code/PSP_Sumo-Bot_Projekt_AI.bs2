@@ -1,0 +1,130 @@
+'////////////////////////////////////////////////////////////////////////////////////
+'// Author: Fredrick Johansson
+'// WEB: http://GoolStuff.com
+'// Date: November 2009
+'// Project: GooLStuFF_PSP_Sumo-Bot_Project
+'// CodePart: Part 2 - The AI
+'// Requirements:
+'//   1 Sumo-Bot from Parallax.
+'//   4 IR-Sensors
+'//   4 IR-LEDs
+'//   1 PIEZO speaker
+'//   2 220ohm Rsistor (Red-Red-Brown)
+'//   A mig circle with a black border.
+'// Info:
+'//   The AI is a simple statemachine with two states.
+'//     1. Drone: Move forwards until reaching the border.
+'//         Back up and turn in another direction.
+'//         If something comes in sight, turn towards it and move forwards.
+'//     2. Chase: Move forwards. If the object is seen in either the left or right,
+'//         correct the direction and continue forwards.
+'////////////////////////////////////////////////////////////////////////////////////
+'////////////////////////////////////////////////////////////////////////////////////
+' {$STAMP BS2}
+' {$PBASIC 2.5}
+'///////////////////////////////////////////////////////////
+'//////////////// Constants
+'// States
+STATE_DRONE                 CON 0
+STATE_CHASE                 CON 1
+
+'// Pins
+LEFT_SERVO                  PIN 13
+RIGHT_SERVO                 PIN 12
+IR_LED_TABLETOP_LEFT        PIN 10
+IR_LED_TABLETOP_RIGHT       PIN 7
+IR_DETECTOR_TABLETOP_LEFT   PIN 9
+IR_DETECTOR_TABLETOP_RIGHT  PIN 8
+PIEZO                       PIN 1
+IR_LED_FRONT_LEFT           PIN 4
+IR_LED_FRONT_RIGHT          PIN 15
+IR_LED_REAR_LEFT            PIN 5
+IR_LED_REAR_RIGHT           PIN 4
+IR_DETECTOR_FRONT_LEFT      PIN 11
+IR_DETECTOR_FRONT_RIGHT     PIN 14
+IR_DETECTOR_REAR_LEFT       PIN 2
+IR_DETECTOR_REAR_RIGHT      PIN 3
+
+'// Servo Info
+LEFT_SERVO_CENTER           CON 750
+RIGHT_SERVO_CENTER          CON 750
+'///////////////////////////////////////////////////////////
+'//////////////// Variables
+leftServoAcceleration       VAR Word       'adds to servo_center
+rightServoAcceleration      VAR Word       'adds to servo_center
+stateOfAI                   VAR Word       'The state of the AI
+irLineInTableTopLeft        VAR Word       'Input from qti, TableTop left
+irLineInTableTopRight       VAR Word       'Input from qti, TableTop Right
+irLineInFrontLeft           VAR Bit        'Input from qti, Front left
+irLineInFrontRight          VAR Bit        'Input from qti, Front Right
+irLineInRearLeft            VAR Bit        'Input from qti, Rear left
+irLineInRearRight           VAR Bit        'Input from qti, Rear Right
+'///////////////////////////////////////////////////////////
+
+DEBUG "The robot has awakened!"
+DO
+  GOSUB subReadLeftTableTopQTI   'Sleeps for 1 turn
+  GOSUB subReadRightTableTopQTI  'Sleeps for 1 turn
+  GOSUB subReadLeftFrontQTI      'Sleeps for 1 turn
+  GOSUB subReadRightFrontQTI     'Sleeps for 1 turn
+  GOSUB subReadLeftRearQTI       'Sleeps for 1 turn
+  GOSUB subReadRightRearQTI      'Sleeps for 1 turn  '// That's 6 turns
+
+  DEBUG HOME,
+        "Left TableTop QTI: ", DEC irLineInTableTopLeft, CLREOL, CR,
+        "Right TableTop QTI: ", DEC irLineInTableTopRight, CLREOL, CR,
+        "Left Front QTI: ", DEC irLineInFrontLeft, CLREOL, CR,
+        "Right Front QTI: ", DEC irLineInFrontRight, CLREOL, CR,
+        "Left Rear QTI: ", DEC irLineInRearLeft, CLREOL, CR,
+        "Right Rear QTI: ", DEC irLineInRearRight, CLREOL
+
+  PAUSE 100
+LOOP
+
+subReadLeftTableTopQTI:
+  HIGH IR_LED_TABLETOP_LEFT
+  HIGH IR_DETECTOR_TABLETOP_LEFT
+  PAUSE 1
+  RCTIME IR_DETECTOR_TABLETOP_LEFT , 1, irLineInTableTopLeft
+  LOW IR_LED_TABLETOP_LEFT
+  RETURN
+
+subReadRightTableTopQTI:
+  HIGH IR_LED_TABLETOP_RIGHT
+  HIGH IR_DETECTOR_TABLETOP_RIGHT
+  PAUSE 1
+  RCTIME IR_DETECTOR_TABLETOP_RIGHT , 1, irLineInTableTopRight
+  LOW IR_LED_TABLETOP_RIGHT
+  RETURN
+
+subReadLeftFrontQTI:
+  HIGH IR_LED_FRONT_LEFT
+  HIGH IR_DETECTOR_FRONT_LEFT
+  PAUSE 1
+  RCTIME IR_DETECTOR_FRONT_LEFT , 1, irLineInFrontLeft
+  LOW IR_LED_FRONT_LEFT
+  RETURN
+
+subReadRightFrontQTI:
+  HIGH IR_LED_FRONT_RIGHT
+  HIGH IR_DETECTOR_FRONT_RIGHT
+  PAUSE 1
+  RCTIME IR_DETECTOR_FRONT_RIGHT  , 1, irLineInFrontRight
+  LOW IR_LED_FRONT_RIGHT
+  RETURN
+
+subReadLeftRearQTI:
+  HIGH IR_LED_REAR_LEFT
+  HIGH IR_DETECTOR_REAR_LEFT
+  PAUSE 1
+  RCTIME IR_DETECTOR_REAR_LEFT , 1, irLineInRearLeft
+  LOW IR_LED_REAR_LEFT
+  RETURN
+
+subReadRightRearQTI:
+  HIGH IR_LED_REAR_RIGHT
+  HIGH IR_DETECTOR_REAR_RIGHT
+  PAUSE 1
+  RCTIME IR_DETECTOR_REAR_RIGHT , 1, irLineInRearRight
+  LOW IR_LED_REAR_RIGHT
+  RETURN
